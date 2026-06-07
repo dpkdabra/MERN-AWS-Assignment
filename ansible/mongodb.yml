@@ -1,0 +1,41 @@
+---
+- hosts: db
+  become: yes
+
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - gnupg
+        state: present
+
+    - name: Add MongoDB GPG key
+      shell: |
+        curl -fsSL https://pgp.mongodb.com/server-7.0.asc | \
+        gpg --dearmor -o /usr/share/keyrings/mongodb-server.gpg
+      args:
+        creates: /usr/share/keyrings/mongodb-server.gpg
+
+    - name: Add MongoDB repo
+      copy:
+        dest: /etc/apt/sources.list.d/mongodb-org-7.0.list
+        content: |
+          deb [ signed-by=/usr/share/keyrings/mongodb-server.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse
+
+    - name: Install MongoDB
+      apt:
+        update_cache: yes
+        name: mongodb-org
+        state: present
+
+    - name: Start MongoDB
+      service:
+        name: mongod
+        enabled: yes
+        state: started
